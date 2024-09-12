@@ -1,20 +1,50 @@
 import 'package:flutter/material.dart';
-
-import 'src/app.dart';
-import 'src/settings/settings_controller.dart';
-import 'src/settings/settings_service.dart';
+import 'package:list_maker/login_page.dart';
+import 'package:list_maker/services/auth_service.dart';
+import 'package:list_maker/show_lists.dart';
+import 'package:provider/provider.dart';
 
 void main() async {
-  // Set up the SettingsController, which will glue user settings to multiple
-  // Flutter Widgets.
-  final settingsController = SettingsController(SettingsService());
+  WidgetsFlutterBinding.ensureInitialized();
 
-  // Load the user's preferred theme while the splash screen is displayed.
-  // This prevents a sudden theme change when the app is first displayed.
-  await settingsController.loadSettings();
+  await AuthService.init();
 
-  // Run the app and pass in the SettingsController. The app listens to the
-  // SettingsController for changes, then passes it further down to the
-  // SettingsView.
-  runApp(MyApp(settingsController: settingsController));
+  runApp(Provider(
+    create: (BuildContext context) => AuthService(),
+    child: const ListMaker(),
+  ));
+}
+
+class ListMaker extends StatelessWidget {
+  const ListMaker({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: "List Maker",
+      theme: ThemeData(
+          canvasColor: Colors.transparent,
+          primarySwatch: Colors.blue,
+          appBarTheme: const AppBarTheme(
+              backgroundColor: Colors.blue, foregroundColor: Colors.black)),
+      /* home: const CounterStateful(
+        buttonColor: Colors.amber,
+      ), */
+      home: FutureBuilder<bool>(
+        future: context.read<AuthService>().isUserLoggedIn(),
+        builder: (context, AsyncSnapshot<bool> snapshot) {
+          if (snapshot.connectionState == ConnectionState.done) {
+            if (snapshot.hasData && snapshot.data!) {
+              return const ShowLists();
+            } else {
+              return LoginPage();
+            }
+          }
+          return const CircularProgressIndicator();
+        },
+      ),
+      debugShowCheckedModeBanner: false,
+      routes: {'/lists': (context) => const ShowLists()},
+    );
+  }
 }
