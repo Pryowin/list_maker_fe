@@ -7,9 +7,11 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.5.1
+  sdk: ^3.5.0
 
 dependencies:
+  dio: ^5.7.0
+  email_validator: ^3.0.0
   flutter:
     sdk: flutter
   flutter_localizations:

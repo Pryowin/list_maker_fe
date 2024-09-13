@@ -19,7 +19,7 @@ class _ShowListsState extends State<ShowLists> {
           IconButton(
               onPressed: () {
                 context.read<AuthService>().logoutUser();
-                Navigator.popAndPushNamed(context, '/');
+                Navigator.pushReplacementNamed(context, '/login');
               },
               icon: const Icon(Icons.logout))
         ],

@@ -1,5 +1,11 @@
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:list_maker/create_account.dart';
+import 'package:list_maker/services/api_service.dart';
 import 'package:list_maker/services/auth_service.dart';
+import 'package:list_maker/utils/dialog_box.dart';
+import 'package:list_maker/validators/login_page_validators.dart';
 import 'package:list_maker/widgets/login_textfield.dart';
 import 'package:provider/provider.dart';
 
@@ -7,21 +13,52 @@ class LoginPage extends StatelessWidget {
   LoginPage({super.key});
 
   final _formkey = GlobalKey<FormState>();
-  // TODO Change print statements to Debug
+
   Future<void> loginUser(BuildContext context) async {
     if (_formkey.currentState != null && _formkey.currentState!.validate()) {
-      print(emailController.text);
-      print(passwordController.text);
+      final email = emailController.text;
+      final password = passwordController.text;
+      if (kDebugMode) {
+        print(email);
+      }
+      if (kDebugMode) {
+        print(password);
+      }
 
-      //TODO Add call to API to validate login.
-      await context
-          .read<AuthService>()
-          .loginUser(emailController.text, "JWT", "REFRESH");
+      final formData = {'email': email, 'password': password};
 
-      //TODO fix issue with context
-      Navigator.pushReplacementNamed(context, '/lists',
-          arguments: emailController.text);
-      print('login successful');
+      final apiService = Provider.of<ApiService>(context, listen: false);
+      try {
+        final _ = await apiService.postRequest('/get_token', data: formData);
+
+        await context
+            .read<AuthService>()
+            .loginUser(emailController.text, "JWT", "REFRESH");
+
+        if (context.mounted) {
+          Navigator.pushReplacementNamed(context, '/lists',
+              arguments: emailController.text);
+          if (kDebugMode) {
+            print('login successful');
+          }
+          emailController.clear();
+          passwordController.clear();
+        }
+      } on DioException catch (de) {
+        if (de.response != null) {
+          if (de.response!.statusCode == 401) {
+            showErrorDialog(
+                // ignore: use_build_context_synchronously
+                context,
+                "Login failed: Bad Password or email address.");
+          }
+        } else {
+          showErrorDialog(
+              // ignore: use_build_context_synchronously
+              context,
+              "Login failed for unknown reasons. Please try again later.");
+        }
+      }
     }
   }
 
@@ -35,53 +72,56 @@ class LoginPage extends StatelessWidget {
         body: Center(
             child:
                 Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          const Text('Let\'s Sign You In',
+          const Text('Welcome to List Maker',
               style: TextStyle(
                   fontSize: 30,
-                  color: Colors.brown,
+                  color: Colors.cyan,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.5)),
           const Text(
-            'Welcome Back! \nYou\'ve been missed',
+            'Log In or click link below to create an account',
             textAlign: TextAlign.center,
             style: TextStyle(
                 fontSize: 20,
-                color: Colors.brown,
+                color: Colors.cyan,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 0.5),
           ),
+          const SizedBox(height: 10),
+          GestureDetector(
+            child: const Text(
+              'Create an Account',
+              style: TextStyle(
+                color: Colors.blue,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const CreateAccount()),
+              );
+            },
+          ),
+          const SizedBox(height: 10),
           Image.asset(
             'assets/images/list.jpg',
             height: 200,
           ),
-          //TODO Implement email validation
           Form(
               key: _formkey,
               child: Column(children: [
                 LoginTextfield(
-                  controller: emailController,
-                  hintText: 'Enter your email',
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return "Email must be provided";
-                    }
-                    if (value.length < 6) {
-                      return "Invalid email";
-                    }
-                    return null;
-                  },
-                ),
+                    controller: emailController,
+                    hintText: 'Enter your email',
+                    validator: (value) {
+                      return isEmailValid(value);
+                    }),
                 LoginTextfield(
                   controller: passwordController,
                   hintText: "Enter your password",
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return "Password must be provided";
-                    }
-                    if (value.length < 8 || value.length > 20) {
-                      return "Password must be between 8 and 20 characters in length.";
-                    }
-                    return null;
+                    return isPasswordValid(value);
                   },
                   hideText: true,
                 ),
@@ -91,7 +131,7 @@ class LoginPage extends StatelessWidget {
                     },
                     style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue.shade50),
-                    child: const Text('Login',
+                    child: Text('Login',
                         style: TextStyle(
                             fontSize: 24, fontWeight: FontWeight.w300))),
               ]))

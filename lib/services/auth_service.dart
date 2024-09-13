@@ -21,8 +21,8 @@ class AuthService {
     }
   }
 
-  Future<bool> isUserLoggedIn() async {
-    String? userName = await _prefs.getString("userName");
+  bool isUserValid() {
+    String? userName = _prefs.getString("userName");
     return userName != null;
   }
 
