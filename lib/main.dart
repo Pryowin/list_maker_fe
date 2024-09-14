@@ -49,7 +49,7 @@ class ListMaker extends StatelessWidget {
         routes: {
           '/lists': (context) => const ShowLists(),
           '/login': (context) => LoginPage(),
-          '/createAccount': (context) => const CreateAccount(),
+          '/createAccount': (context) => CreateAccount(),
         },
         home: context.read<AuthService>().isUserValid()
             ? const ShowLists()

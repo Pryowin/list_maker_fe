@@ -5,7 +5,7 @@ import 'package:list_maker/create_account.dart';
 import 'package:list_maker/services/api_service.dart';
 import 'package:list_maker/services/auth_service.dart';
 import 'package:list_maker/utils/dialog_box.dart';
-import 'package:list_maker/validators/login_page_validators.dart';
+import 'package:list_maker/validators/common_validators.dart';
 import 'package:list_maker/widgets/login_textfield.dart';
 import 'package:provider/provider.dart';
 
@@ -99,7 +99,7 @@ class LoginPage extends StatelessWidget {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const CreateAccount()),
+                MaterialPageRoute(builder: (context) => CreateAccount()),
               );
             },
           ),
@@ -115,13 +115,17 @@ class LoginPage extends StatelessWidget {
                     controller: emailController,
                     hintText: 'Enter your email',
                     validator: (value) {
-                      return isEmailValid(value);
+                      return validateEmail(value);
                     }),
                 LoginTextfield(
                   controller: passwordController,
                   hintText: "Enter your password",
                   validator: (value) {
-                    return isPasswordValid(value);
+                    return validateTextField(
+                        fieldName: 'Password',
+                        textField: value,
+                        min: 8,
+                        max: 20);
                   },
                   hideText: true,
                 ),
