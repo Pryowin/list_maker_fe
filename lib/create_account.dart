@@ -1,8 +1,13 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:list_maker/services/api_service.dart';
+import 'package:list_maker/utils/dialog_box.dart';
 import 'package:list_maker/validators/common_validators.dart';
+import 'package:list_maker/widgets/account_created_dialog.dart';
 import 'package:list_maker/widgets/create_account_data_picker.dart';
 import 'package:list_maker/widgets/create_account_textfield.dart';
+import 'package:provider/provider.dart';
 
 class CreateAccount extends StatelessWidget {
   CreateAccount({super.key});
@@ -27,17 +32,46 @@ class CreateAccount extends StatelessWidget {
       final dateOfBirth = dateOfBirthController.text;
       final passwordRetyped = passwordRetypedController.text;
 
-      if (kDebugMode) {
-        debugPrint("Creating User Account");
-        debugPrint('User name = $userName');
-        debugPrint('First name = $firstName');
-        debugPrint('Last name = $lastName');
-        debugPrint('Email = $email');
-        debugPrint('DOB = $dateOfBirth');
-        debugPrint('Password = $password');
-        debugPrint('Password = $passwordRetyped');
+      final formData = {
+        'user_name': userName,
+        'first_name': firstName,
+        'last_name': lastName,
+        'email': email,
+        'date_of_birth': dateOfBirth,
+        'password': password,
+        'password_confirm': passwordRetyped
+      };
+      final apiService = Provider.of<ApiService>(context, listen: false);
+      try {
+        final response =
+            await apiService.postRequest('/create_user', data: formData);
+        if (context.mounted) {
+          if (response.statusCode == 409) {
+            final errorMessage =
+                "Account Not Created\n\n ${buildDuplicateError(response.data)}";
+            showErrorDialog(context, errorMessage);
+
+            if (kDebugMode) {
+              print("Duplicate Data");
+            }
+          } else {
+            accountCreatedDialog(context);
+          }
+        }
+      } on DioException catch (de) {
+        if (kDebugMode) {
+          print('Account creation failed $de');
+        }
       }
     }
+  }
+
+  String buildDuplicateError(data) {
+    String returnText = "";
+    data.forEach((errorText) {
+      returnText += errorText + '\n';
+    });
+    return returnText;
   }
 
   @override
