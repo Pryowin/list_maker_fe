@@ -1,6 +1,7 @@
 // ignore: file_names
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:list_maker/services/http_response_codes.dart';
 
 class ApiService {
   // Private constructor
@@ -72,13 +73,16 @@ class ApiService {
     String endpoint, {
     Map<String, dynamic>? data,
     Map<String, dynamic>? queryParameters,
+    int? expectedErrorStatusCode,
   }) async {
+    expectedErrorStatusCode ??= ResponseCode.success;
     try {
       Response response = await _dio
           .post(endpoint, data: data, queryParameters: queryParameters,
               options: Options(validateStatus: (status) {
         return status != null &&
-            (status >= 200 && status < 300 || status == 409);
+            (status >= 200 && status < 300 ||
+                status == expectedErrorStatusCode);
       }));
       return response;
     } catch (e) {

@@ -8,12 +8,9 @@ class AuthService {
 
   static late final SharedPreferences _prefs;
 
-  Future<void> loginUser(
-      String userName, String token, String refreshToken) async {
+  Future<void> loginUser(String userName) async {
     try {
       _prefs.setString('userName', userName);
-      _prefs.setString('token', token);
-      _prefs.setString('refreshToken', refreshToken);
     } on Exception catch (e) {
       if (kDebugMode) {
         debugPrint(e.toString());
@@ -32,13 +29,5 @@ class AuthService {
 
   String? getUserName() {
     return _prefs.getString('userName') ?? 'No current user';
-  }
-
-  String? getToken() {
-    return _prefs.getString('token');
-  }
-
-  String? getRefreshToken() {
-    return _prefs.getString('refreshToken');
   }
 }

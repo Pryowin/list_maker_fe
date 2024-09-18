@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:list_maker/create_account.dart';
 import 'package:list_maker/services/api_service.dart';
 import 'package:list_maker/services/auth_service.dart';
+import 'package:list_maker/services/http_response_codes.dart';
 import 'package:list_maker/utils/dialog_box.dart';
+import 'package:list_maker/utils/text_fields_styles.dart';
 import 'package:list_maker/validators/common_validators.dart';
 import 'package:list_maker/widgets/login_textfield.dart';
 import 'package:provider/provider.dart';
@@ -18,46 +20,38 @@ class LoginPage extends StatelessWidget {
     if (_formkey.currentState != null && _formkey.currentState!.validate()) {
       final email = emailController.text;
       final password = passwordController.text;
-      if (kDebugMode) {
-        print(email);
-      }
-      if (kDebugMode) {
-        print(password);
-      }
 
       final formData = {'email': email, 'password': password};
 
       final apiService = Provider.of<ApiService>(context, listen: false);
       try {
-        final _ = await apiService.postRequest('/get_token', data: formData);
-
-        await context
-            .read<AuthService>()
-            .loginUser(emailController.text, "JWT", "REFRESH");
-
-        if (context.mounted) {
-          Navigator.pushReplacementNamed(context, '/lists',
-              arguments: emailController.text);
-          if (kDebugMode) {
-            print('login successful');
-          }
-          emailController.clear();
-          passwordController.clear();
-        }
-      } on DioException catch (de) {
-        if (de.response != null) {
-          if (de.response!.statusCode == 401) {
-            showErrorDialog(
-                // ignore: use_build_context_synchronously
-                context,
-                "Login failed: Bad Password or email address.");
-          }
-        } else {
+        final response = await apiService.postRequest('/get_token',
+            data: formData, expectedErrorStatusCode: ResponseCode.unauthorized);
+        if (response.statusCode == ResponseCode.unauthorized) {
           showErrorDialog(
               // ignore: use_build_context_synchronously
               context,
-              "Login failed for unknown reasons. Please try again later.");
+              "Login failed: Bad Password or email address.");
+        } else {
+          if (context.mounted) {
+            await context.read<AuthService>().loginUser(emailController.text);
+          }
+
+          if (context.mounted) {
+            Navigator.pushReplacementNamed(context, '/lists',
+                arguments: emailController.text);
+            if (kDebugMode) {
+              print('login successful');
+            }
+            emailController.clear();
+            passwordController.clear();
+          }
         }
+      } on DioException catch (de) {
+        showErrorDialog(
+            // ignore: use_build_context_synchronously
+            context,
+            "Login failed $de. Please try again later.");
       }
     }
   }
@@ -72,27 +66,20 @@ class LoginPage extends StatelessWidget {
         body: Center(
             child:
                 Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          const Text('Welcome to List Maker',
-              style: TextStyle(
-                  fontSize: 30,
-                  color: Colors.cyan,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5)),
-          const Text(
+          Text('Welcome to List Maker',
+              style: ThemeTextStyle.headingOneTextStyle),
+          Text(
             'Log In or click link below to create an account',
             textAlign: TextAlign.center,
-            style: TextStyle(
-                fontSize: 20,
-                color: Colors.cyan,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.5),
+            style: ThemeTextStyle.headingTwoTextStyle,
           ),
           const SizedBox(height: 10),
           GestureDetector(
-            child: const Text(
+            child: Text(
               'Create an Account',
               style: TextStyle(
                 color: Colors.blue,
+                fontSize: ThemeTextStyle.mediumFont,
                 decoration: TextDecoration.underline,
               ),
             ),
@@ -135,7 +122,7 @@ class LoginPage extends StatelessWidget {
                     },
                     style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue.shade50),
-                    child: Text('Login',
+                    child: const Text('Login',
                         style: TextStyle(
                             fontSize: 24, fontWeight: FontWeight.w300))),
               ]))
